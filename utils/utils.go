@@ -56,6 +56,7 @@ func CheckServerErr(err error) {
 	}
 }
 
+// TODO:
 func IsViewAble(fullPath string) bool {
 	return true
 }

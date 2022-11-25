@@ -14,6 +14,7 @@ func createTempFile(filePath string, content []byte) {
 	fileHandle.Write(content)
 }
 
+// TODO:
 func createHtml(itemNames []string, theme string) error {
 	var html string
 
