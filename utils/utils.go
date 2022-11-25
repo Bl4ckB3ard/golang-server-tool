@@ -55,3 +55,7 @@ func CheckServerErr(err error) {
 		os.Exit(1)
 	}
 }
+
+func IsViewAble(fullPath string) bool {
+	return true
+}

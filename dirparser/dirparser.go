@@ -10,6 +10,13 @@ import (
 	"github.com/Bl4ckB3ard/golang-server-tool/utils"
 )
 
+type Item struct {
+	BaseName   string
+	FullPath   string
+	IsDir      bool
+	IsViewAble bool
+}
+
 func GetDirNames(dir string) ([]string, error) {
 	fileHandle, err := os.Open(dir)
 	if !utils.IsValidDirectory(dir) {
@@ -30,8 +37,8 @@ func GetDirNames(dir string) ([]string, error) {
 	return names, nil
 }
 
-func GetRootDirPaths(dir string) ([]string, error) {
-	var names []string
+func GetRootFS(dir string) ([]Item, error) {
+	var FS []Item
 
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -39,12 +46,15 @@ func GetRootDirPaths(dir string) ([]string, error) {
 			os.Exit(2)
 		}
 
-		names = append(names, path+"/"+d.Name())
+		fullPath := path + "/" + d.Name()
+
+		FS = append(FS, Item{BaseName: d.Name(), FullPath: fullPath, IsDir: d.IsDir(), IsViewAble: utils.IsViewAble(fullPath)})
 		return nil
 	})
 
 	if err != nil {
-		return []string{}, err
+		return []Item{}, err
 	}
-	return names, nil
+
+	return FS, nil
 }
