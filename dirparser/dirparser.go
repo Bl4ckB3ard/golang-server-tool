@@ -1,60 +1,74 @@
 package dirparser
 
 import (
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/Bl4ckB3ard/golang-server-tool/utils"
 )
 
-type Item struct {
-	BaseName   string
-	FullPath   string
-	IsDir      bool
-	IsViewAble bool
+func GetDirItems(fullDirPath string, rootFS RootFS) []Item {
+	var items []Item
+	for _, item := range rootFS.Items {
+		sameName := filepath.Clean(item.FullPath) == filepath.Clean(fullDirPath)
+
+		escapedPath := utils.EscapePath(fullDirPath)
+
+		re := regexp.MustCompile("^(" + escapedPath + ")" + "\\/[^/]+\\/?$")
+
+		match := re.MatchString(filepath.Clean(item.FullPath))
+
+		if match && !sameName {
+			items = append(items, item)
+		}
+	}
+
+	return items
 }
 
-func GetDirNames(dir string) ([]string, error) {
-	fileHandle, err := os.Open(dir)
-	if !utils.IsValidDirectory(dir) {
-		return []string{}, errors.New(fmt.Sprintf("%v is not a valid directory", dir))
-	}
+func GetRootFS(rootDir string) (RootFS, error) {
+	FS := RootFS{RootPath: rootDir}
+	var items []Item
 
-	content, err := fileHandle.ReadDir(0)
-	if err != nil {
-		return []string{}, err
-	}
-
-	names := make([]string, len(content))
-
-	for idx, val := range content {
-		names[idx] = val.Name()
-	}
-
-	return names, nil
-}
-
-func GetRootFS(dir string) ([]Item, error) {
-	var FS []Item
-
-	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			fmt.Println("ERROR: getting root directory's content")
 			os.Exit(2)
 		}
 
-		fullPath := path + "/" + d.Name()
+		info, _ := d.Info()
 
-		FS = append(FS, Item{BaseName: d.Name(), FullPath: fullPath, IsDir: d.IsDir(), IsViewAble: utils.IsViewAble(fullPath)})
+		var fullPath string
+		var size string
+		if !info.IsDir() {
+			fullPath = path
+			size = utils.ParseFileSize(info.Size())
+		} else {
+			fullPath = path + "/"
+			size = utils.GetDirSize(fullPath)
+		}
+
+		items = append(items, Item{
+			BaseName:     d.Name(),
+			FullPath:     fullPath,
+			RelativePath: strings.Replace(fullPath, filepath.Clean(rootDir), "", 1),
+			IsDir:        d.IsDir(),
+			IsViewAble:   utils.IsViewAble(fullPath),
+			Size:         size,
+		})
+
 		return nil
 	})
 
 	if err != nil {
-		return []Item{}, err
+		return RootFS{}, err
 	}
+
+	FS.Items = items
 
 	return FS, nil
 }
