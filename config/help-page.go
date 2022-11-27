@@ -1,4 +1,4 @@
-package argparser
+package config
 
 import (
 	"fmt"

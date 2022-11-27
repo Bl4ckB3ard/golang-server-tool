@@ -1,4 +1,4 @@
-package argparser
+package config
 
 import (
 	"errors"
@@ -9,28 +9,7 @@ import (
 	"github.com/Bl4ckB3ard/golang-server-tool/utils"
 )
 
-type Args struct {
-	DirectoryPath string
-	Port          string
-	FilePath      string
-	IsFile        bool
-}
-
-var ARGS Args
-
-func init() {
-	a, err := parseOSArgs(os.Args[1:])
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	a.Parse()
-	ARGS = a
-}
-
-func parseOSArgs(argv []string) (Args, error) {
+func ParseOSArgs(argv []string) (Args, error) {
 	var a Args
 
 	for idx, val := range argv {
@@ -63,6 +42,7 @@ func parseOSArgs(argv []string) (Args, error) {
 			fullPath, _ := filepath.Abs(i)
 			a.FilePath = fullPath
 			a.IsFile = true
+
 		case "-h", "--help":
 			help()
 		}
@@ -71,7 +51,7 @@ func parseOSArgs(argv []string) (Args, error) {
 	return a, nil
 }
 
-func (a *Args) Parse() {
+func (a *Args) Parse() Args {
 	directoryOnly := a.DirectoryPath != "" && a.FilePath == ""
 	fileOnly := a.DirectoryPath == "" && a.FilePath != ""
 	dirAndFile := a.DirectoryPath != "" && a.FilePath != ""
@@ -112,5 +92,5 @@ func (a *Args) Parse() {
 		fmt.Println("No args supplied. Try -h or --help. Continuing with defaults.")
 	}
 
-	return
+	return *a
 }
