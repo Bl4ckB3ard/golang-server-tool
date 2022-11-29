@@ -155,9 +155,16 @@ func init() {
         </h1>
         <img class="logo-img"  alt="logo">
     </div>
-    <h2><a href="/" class="no-color">Driectory: C:\Users\Owner\</a></h2>
+    <h2><a href="/" class="no-color">Driectory: {{ .RootDirectory }}</a></h2>
     <br>
     <table>
+        <tr class="header-row">
+            <th></th>    <!-- file/folder icon -->
+            <th>Name</th>
+            <th><button class="sort-button"><img class="sort-icon" alt="sort icon"></button>Size</th>
+            <th></th>    <!-- view link -->
+            <th></th>    <!-- download link -->
+        </tr>
 	{{ range $i, $val := .Items }}
 	    <tr>
 	    {{ if $val.IsDir }}

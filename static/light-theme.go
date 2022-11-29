@@ -154,7 +154,7 @@ func init() {
         </h1>
         <img class="logo-img"  alt="logo">
     </div>
-    <h2><a href="/" class="no-color">Driectory: C:\Users\Owner\</a></h2>
+    <h2><a href="/" class="no-color">Driectory: {{ .RootDirectory }}</a></h2>
     <br>
     <table>
         <tr class="header-row">
