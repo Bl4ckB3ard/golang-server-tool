@@ -7,13 +7,6 @@ import (
 	"strings"
 )
 
-// TODO:
-func IsViewAble(fullPath string) bool {
-	// validExts := []string{".mp4", ".mp3", ".json", ".html", ".css", ".js", ".py", ".go", ".c", ".jpg", ".jpeg", ".png", ".ogg", ".webm", ""}
-
-	return true
-}
-
 func ParseFileSize(size int64) string {
 	bytee := size < 1000
 	KB := size >= 1000 && size < 1000000
@@ -22,7 +15,7 @@ func ParseFileSize(size int64) string {
 
 	switch {
 	case bytee:
-		return fmt.Sprintf("%d Bytes", size)
+		return strings.Replace(fmt.Sprintf("%d Bytes", size), ".00", "", 1)
 	case KB:
 		return strings.Replace(fmt.Sprintf("%.2f KB", math.Round(float64(size/1000))), ".00", "", 1)
 	case MB:
@@ -38,5 +31,5 @@ func GetDirSize(p string) string {
 	handle, _ := os.Open(p)
 	defer handle.Close()
 	items, _ := handle.ReadDir(0)
-	return fmt.Sprintf("%d, items", len(items))
+	return fmt.Sprintf("%d Items", len(items))
 }

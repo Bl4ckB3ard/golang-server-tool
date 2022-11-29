@@ -57,7 +57,6 @@ func GetRootFS(rootDir string) (RootFS, error) {
 			FullPath:     fullPath,
 			RelativePath: strings.Replace(fullPath, filepath.Clean(rootDir), "", 1),
 			IsDir:        d.IsDir(),
-			IsViewAble:   utils.IsViewAble(fullPath),
 			Size:         size,
 		})
 

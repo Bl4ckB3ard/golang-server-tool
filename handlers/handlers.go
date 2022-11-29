@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bytes"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -12,14 +11,10 @@ import (
 
 	"github.com/Bl4ckB3ard/golang-server-tool/config"
 	"github.com/Bl4ckB3ard/golang-server-tool/dirparser"
-	"github.com/Bl4ckB3ard/golang-server-tool/html"
+	"github.com/Bl4ckB3ard/golang-server-tool/page"
+	"github.com/Bl4ckB3ard/golang-server-tool/static"
 	"github.com/Bl4ckB3ard/golang-server-tool/utils"
 )
-
-func FaviconHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeContent(w, r, "favicon.ico", time.Now(), bytes.NewReader(config.FaviconIcoFile))
-	return
-}
 
 func FileHandler(w http.ResponseWriter, r *http.Request) {
 	if err := utils.CheckMethod(w, r); err != nil {
@@ -34,26 +29,48 @@ func FileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleDirectory(w http.ResponseWriter, i dirparser.Item, r *http.Request) {
+	if err := utils.CheckMethod(w, r); err != nil {
+		return
+	}
+
 	if !i.IsDir {
 		http.Error(w, fmt.Sprintf("%v is a file view or download parameter is mandatory", i.BaseName), http.StatusBadRequest)
 		return
 	}
-	pageData := html.GetPageData(filepath.Clean(i.FullPath), config.RootFS)
-	tmpl, err := template.New(i.BaseName).Parse(html.LightThemeTemplate)
+
+	pageData := page.GetPageData(filepath.Clean(i.FullPath), config.RootFS)
+	var err error
+	var tmpl *template.Template
+	if config.ARGS.Theme == "light" {
+		tmpl, err = template.New(i.BaseName).Parse(static.LightThemeTemplate)
+	} else {
+		tmpl, err = template.New(i.BaseName).Parse(static.DarkThemeTemplate)
+	}
 
 	if err != nil {
 		http.Error(w, "ERROR: invalid template", http.StatusInternalServerError)
 		fmt.Printf("%v\nERROR: couldn't parse template\n", err)
 		os.Exit(2)
 	}
+
 	utils.DefaultHeaders(w)
 	tmpl.Execute(w, pageData)
 	return
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
-	pageData := html.GetPageData(config.ARGS.DirectoryPath, config.RootFS)
-	tmpl, err := template.New("home").Parse(html.LightThemeTemplate)
+	if err := utils.CheckMethod(w, r); err != nil {
+		return
+	}
+
+	pageData := page.GetPageData(config.ARGS.DirectoryPath, config.RootFS)
+	var err error
+	var tmpl *template.Template
+	if config.ARGS.Theme == "light" {
+		tmpl, err = template.New("home").Parse(static.LightThemeTemplate)
+	} else {
+		tmpl, err = template.New("home").Parse(static.DarkThemeTemplate)
+	}
 
 	if err != nil {
 		http.Error(w, "ERROR: invalid template", http.StatusInternalServerError)
@@ -69,6 +86,10 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleView(w http.ResponseWriter, i dirparser.Item, r *http.Request) {
+	if err := utils.CheckMethod(w, r); err != nil {
+		return
+	}
+
 	if i.IsDir {
 		http.Error(w, "Can not use view and download parameters on directory", http.StatusBadRequest)
 		return
@@ -80,6 +101,10 @@ func handleView(w http.ResponseWriter, i dirparser.Item, r *http.Request) {
 }
 
 func handleDownload(w http.ResponseWriter, i dirparser.Item, r *http.Request) {
+	if err := utils.CheckMethod(w, r); err != nil {
+		return
+	}
+
 	if i.IsDir {
 		http.Error(w, "Cannont use view and download parameters on directory", http.StatusBadRequest)
 		return
@@ -91,6 +116,10 @@ func handleDownload(w http.ResponseWriter, i dirparser.Item, r *http.Request) {
 }
 
 func MainHandler(w http.ResponseWriter, r *http.Request) {
+	if err := utils.CheckMethod(w, r); err != nil {
+		return
+	}
+
 	if r.URL.EscapedPath() == "/" {
 		handleRoot(w, r)
 		return

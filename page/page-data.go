@@ -1,4 +1,4 @@
-package html
+package page
 
 import (
 	"path/filepath"

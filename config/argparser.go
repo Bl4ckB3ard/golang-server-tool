@@ -9,6 +9,14 @@ import (
 	"github.com/Bl4ckB3ard/golang-server-tool/utils"
 )
 
+type Args struct {
+	DirectoryPath string
+	Port          string
+	FilePath      string
+	IsFile        bool
+	Theme         string
+}
+
 func ParseOSArgs(argv []string) (Args, error) {
 	var a Args
 
@@ -21,14 +29,14 @@ func ParseOSArgs(argv []string) (Args, error) {
 		switch val {
 		case "-p", "--port":
 			if !utils.IsValidPort(i) {
-				return a, errors.New(fmt.Sprintf("ERROR: %v is not a valid port\n", i))
+				return a, errors.New(fmt.Sprintf("ERROR: %s is not a valid port\n", i))
 			}
 
 			a.Port = i
 
 		case "-d", "--dir":
 			if !utils.IsValidDirectory(i) {
-				return a, errors.New(fmt.Sprintf("ERROR: %v is not valid directory\n", i))
+				return a, errors.New(fmt.Sprintf("ERROR: %s is not valid directory\n", i))
 			}
 
 			fullPath, _ := filepath.Abs(i)
@@ -36,13 +44,24 @@ func ParseOSArgs(argv []string) (Args, error) {
 
 		case "-f", "--file":
 			if !utils.IsValidFile(i) {
-				return a, errors.New(fmt.Sprintf("ERROR: %v is not a valid file\n", i))
+				return a, errors.New(fmt.Sprintf("ERROR: %s is not a valid file\n", i))
 			}
 
 			fullPath, _ := filepath.Abs(i)
 			a.FilePath = fullPath
 			a.IsFile = true
-
+		case "-t", "--theme":
+			if i != "dark" {
+				if i != "light" {
+					return a, errors.New(fmt.Sprintf("ERROR: %s is not a valid theme\n", i))
+				}
+			}
+			if i != "light" {
+				if i != "dark" {
+					return a, errors.New(fmt.Sprintf("ERROR: %s is not a valid theme\n", i))
+				}
+			}
+			a.Theme = i
 		case "-h", "--help":
 			help()
 		}
@@ -57,7 +76,8 @@ func (a *Args) Parse() Args {
 	dirAndFile := a.DirectoryPath != "" && a.FilePath != ""
 	noFileAndNoDirectory := a.DirectoryPath == "" && a.FilePath == ""
 	noPort := a.Port == ""
-	noArgs := a.Port == "" && a.DirectoryPath == "" && a.FilePath == ""
+	noArgs := a.Port == "" && a.DirectoryPath == "" && a.FilePath == "" && a.Theme == ""
+	noTheme := a.Theme == ""
 
 	if dirAndFile {
 		fmt.Println("Found directory and file in arguments only one is allowed. Try -h or --help")
@@ -90,6 +110,10 @@ func (a *Args) Parse() Args {
 
 	if noArgs {
 		fmt.Println("No args supplied. Try -h or --help. Continuing with defaults.")
+	}
+
+	if noTheme {
+		a.Theme = "light"
 	}
 
 	return *a
