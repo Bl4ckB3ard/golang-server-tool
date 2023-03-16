@@ -45,5 +45,6 @@ func GetPageData(directory string, rootFS dirparser.RootFS) PageData {
 		Items:          pageItems,
 		LenOfDirectory: len(pageItems),
 	}
+
 	return pd
 }

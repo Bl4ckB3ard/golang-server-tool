@@ -1,35 +1,140 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/base64"
+	"compress/gzip"
+	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Bl4ckB3ard/golang-server-tool/config"
 	"github.com/Bl4ckB3ard/golang-server-tool/dirparser"
 	"github.com/Bl4ckB3ard/golang-server-tool/page"
 	"github.com/Bl4ckB3ard/golang-server-tool/static"
-	"github.com/Bl4ckB3ard/golang-server-tool/utils"
 )
 
+func CheckMethod(w http.ResponseWriter, r *http.Request) error {
+	if r.Method != "GET" {
+		http.Error(w, fmt.Sprintf("Method %s is not allowed.\n", r.Method), http.StatusMethodNotAllowed)
+		return errors.New("Invalid Request Method")
+	}
+	return nil
+}
+
+
+func DefaultHeaders(w http.ResponseWriter) {
+	w.Header().Add("Server", "GoLang")
+}
+
+
+func acceptsGzip(r *http.Request) bool {
+    for _, i := range strings.Split(r.Header.Get("Accepts-Encoding"), ", ") {
+        if i == "gzip" {
+            return true
+        } 
+    }
+
+    return false
+}
+
+
+func gunzip(zipedData []byte) []byte {
+    gr, _ := gzip.NewReader(bytes.NewReader(zipedData))
+
+    gunziped, _ := io.ReadAll(gr)
+    return gunziped
+}
+
+
+func IsInRoot(path string, FS dirparser.RootFS) (bool, dirparser.Item) {
+	for _, item := range FS.Items {
+		if filepath.Clean(path) == filepath.Clean(item.RelativePath) {
+			return true, item
+		}
+	}
+	return false, dirparser.Item{}
+}
+
+
+func StaticHandler(w http.ResponseWriter, r *http.Request) {
+    CheckMethod(w, r)
+
+    var serveFile []byte
+    var fName string
+
+    switch (filepath.Base(r.URL.Path)) {
+    case "file_icon_light.png":
+        serveFile, _ = base64.StdEncoding.DecodeString(static.FileIconLight)
+        fName = "file_icon_light.png"
+        break
+    case "folder_icon_light.png":
+        serveFile, _ = base64.StdEncoding.DecodeString(static.FolderIconLight)
+        fName = "folder_icon_light.png"
+        break
+    case "sort_arrow_icon_light.png":
+        serveFile, _ = base64.StdEncoding.DecodeString(static.SortArrowLight)
+        fName = "sort_arrow_icon_light.png"
+        break
+    case "logo_light.png":
+        serveFile, _ = base64.StdEncoding.DecodeString(static.LogoLight)
+        fName = "logo_light.png"
+        break
+
+    case "file_icon_dark.png":
+        serveFile, _ = base64.StdEncoding.DecodeString(static.FileIconDark)
+        fName = "file_icon_dark.png"
+        break
+    case "folder_icon_dark.png":
+        serveFile, _ = base64.StdEncoding.DecodeString(static.FolderIconDark)
+        fName = "folder_icon_dark.png"
+        break
+    case "sort_arrow_icon_dark.png":
+        serveFile, _ = base64.StdEncoding.DecodeString(static.SortArrowDark)
+        fName = "sort_arrow_icon_dark.png"
+        break
+    case "logo_dark.png":
+        serveFile, _ = base64.StdEncoding.DecodeString(static.LogoDark)
+        fName = "logo_dark.png"
+        break
+    default:
+        http.Error(w, fmt.Sprintf("404 not found %v", filepath.Base(r.URL.Path)), http.StatusNotFound)
+        return
+    }
+
+    if !acceptsGzip(r) {
+        http.ServeContent(w, r, fName, time.Now(), bytes.NewReader(gunzip(serveFile)))
+        return
+    }
+
+    w.Header().Set("Content-Encoding", "gzip")
+    http.ServeContent(w, r, fName, time.Now(), bytes.NewReader(serveFile))
+    return
+}
+
+
 func FileHandler(w http.ResponseWriter, r *http.Request) {
-	if err := utils.CheckMethod(w, r); err != nil {
+	if err := CheckMethod(w, r); err != nil {
 		return
 	}
 
 	content, _ := os.Open(config.ARGS.FilePath)
 
-	utils.DefaultHeaders(w)
+	DefaultHeaders(w)
 
 	http.ServeContent(w, r, filepath.Base(config.ARGS.FilePath), time.Now(), content)
 }
 
+
 func handleDirectory(w http.ResponseWriter, i dirparser.Item, r *http.Request) {
-	if err := utils.CheckMethod(w, r); err != nil {
+	if err := CheckMethod(w, r); err != nil {
 		return
 	}
 
@@ -53,13 +158,14 @@ func handleDirectory(w http.ResponseWriter, i dirparser.Item, r *http.Request) {
 		os.Exit(2)
 	}
 
-	utils.DefaultHeaders(w)
+	DefaultHeaders(w)
 	tmpl.Execute(w, pageData)
 	return
 }
 
+
 func handleRoot(w http.ResponseWriter, r *http.Request) {
-	if err := utils.CheckMethod(w, r); err != nil {
+	if err := CheckMethod(w, r); err != nil {
 		return
 	}
 
@@ -78,15 +184,16 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		os.Exit(2)
 	}
 
-	utils.DefaultHeaders(w)
+	DefaultHeaders(w)
 
 	tmpl.Execute(w, pageData)
 
 	return
 }
 
+
 func handleView(w http.ResponseWriter, i dirparser.Item, r *http.Request) {
-	if err := utils.CheckMethod(w, r); err != nil {
+	if err := CheckMethod(w, r); err != nil {
 		return
 	}
 
@@ -100,8 +207,9 @@ func handleView(w http.ResponseWriter, i dirparser.Item, r *http.Request) {
 	return
 }
 
+
 func handleDownload(w http.ResponseWriter, i dirparser.Item, r *http.Request) {
-	if err := utils.CheckMethod(w, r); err != nil {
+	if err := CheckMethod(w, r); err != nil {
 		return
 	}
 
@@ -115,8 +223,9 @@ func handleDownload(w http.ResponseWriter, i dirparser.Item, r *http.Request) {
 	return
 }
 
+
 func MainHandler(w http.ResponseWriter, r *http.Request) {
-	if err := utils.CheckMethod(w, r); err != nil {
+	if err := CheckMethod(w, r); err != nil {
 		return
 	}
 
